@@ -22,21 +22,16 @@ class TestBranchAnalyticFlow(TestPoSCommon):
 
     @classmethod
     def _create_company(cls, **create_values):
-        # The test infra creates an independent company / posts invoices, which
-        # triggers custom-module hooks (ff_hr_payroll res.company.create and
-        # ff_construction_ultimate account.move._post searching
-        # hr.payroll.structure / construction.certificate). Grant the relevant
-        # groups first so those hooks do not raise AccessError.
-        cls.env.user.group_ids |= cls.env.ref('ff_hr_payroll.group_hr_payroll_user')
-        cls.env.user.group_ids |= cls.env.ref('ff_hr_payroll.group_hr_payroll_manager')
-        cls.env.user.group_ids |= cls.env.ref('ff_construction_ultimate.group_construction_user')
-        cls.env.user.group_ids |= cls.env.ref('sales_team.group_sale_salesman')
+        # The sale order tests need the test user to be able to create sale
+        # orders, so grant the salesman group before the infra creates the
+        # independent company.
+        cls.env.user.groups_id |= cls.env.ref('sales_team.group_sale_salesman')
         return super()._create_company(**create_values)
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.env.user.group_ids |= cls.env.ref('point_of_sale.group_pos_manager')
+        cls.env.user.groups_id |= cls.env.ref('point_of_sale.group_pos_manager')
 
         plan = cls.env['account.analytic.plan'].search([], limit=1)
         if not plan:
@@ -325,7 +320,8 @@ class TestBranchAnalyticFlow(TestPoSCommon):
             'payment_data': [{'payment_method_id': self.cash_pm1.id, 'amount': 100.0}],
             'order_data': {'to_invoice': True, 'partner_id': self.customer.id},
         })
-        invoice = order._generate_pos_order_invoice()
+        action = order._generate_pos_order_invoice()
+        invoice = self.env['account.move'].browse(action['res_id'])
         self.assertEqual(invoice.analytic_account_id, self.cairo)
         for line in invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
             self.assertEqual(line.analytic_distribution, {str(self.cairo.id): 100.0})

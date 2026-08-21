@@ -1,6 +1,6 @@
 {
     'name': 'Branch Analytic Accounting',
-    'version': '19.0.1.0.0',
+    'version': '18.0.1.0.0',
     'category': 'Sales/Point of Sale',
     'sequence': 10,
     'summary': 'Track branch / profit-center P&L by assigning an analytic account to POS, sales orders and customer invoices.',

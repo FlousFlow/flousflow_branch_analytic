@@ -18,7 +18,7 @@ Revenue and COGS land on the same analytic account, while balance-sheet lines
 | POS-generated invoice | Inherits the POS config analytic account on the header and lines automatically. |
 | Enforcement (optional) | Company settings to require an analytic account before closing a POS session / posting a customer invoice. |
 
-## Design — extension points (Odoo 19 source verified)
+## Design — extension points (Odoo 18 source verified)
 
 No core files are modified. Only these hooks are used:
 
