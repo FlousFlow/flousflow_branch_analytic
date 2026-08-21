@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branch Analytic Accounting</title>
+</head>
+<body style="font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2937; line-height: 1.6; max-width: 900px; margin: 2rem auto; padding: 0 1.5rem;">
+  <h1 style="color: #1F3A5F;">Branch Analytic Accounting</h1>
+  <p style="font-size: 1.15rem; color: #374151;">
+    Turn Odoo <strong>Analytic Accounting</strong> into a branch / profit-center
+    tracking system. Assign one branch (analytic account) to a Point of Sale
+    configuration, a sales order or a customer invoice, and the revenue and COGS
+    are automatically posted onto that same branch.
+  </p>
+
+  <h2 style="color: #1F3A5F;">What it does</h2>
+  <ul>
+    <li><strong>Point of Sale</strong> — new <em>Analytic Account</em> field on each POS configuration.</li>
+    <li><strong>POS session closing</strong> — sales, refunds, COGS and COGS reversals receive the POS analytic account (100%). Receivable / cash / bank / tax / stock-valuation lines are never polluted.</li>
+    <li><strong>Customer invoices &amp; credit notes</strong> — an <em>Analytic Account</em> header propagated to the product lines; native stock_account copies it onto COGS lines. Credit notes reverse on the same branch.</li>
+    <li><strong>POS-generated invoices</strong> — inherit the analytic account from the POS config, no manual step.</li>
+    <li><strong>Sales orders</strong> — an <em>Analytic Account</em> header propagated to the order lines, then natively to the invoice and COGS.</li>
+    <li><strong>Optional enforcement</strong> — require an analytic account before closing a POS session, posting a customer invoice, or confirming a sales order.</li>
+  </ul>
+
+  <h2 style="color: #1F3A5F;">Result</h2>
+  <p>
+    The native analytic P&amp;L (Accounting &rarr; Reporting) then shows, per branch:
+  </p>
+  <pre style="background: #f3f4f6; padding: 1rem; border-radius: 8px; overflow-x: auto;">
+Revenue
+- COGS
+-----------
+= Gross Profit</pre>
+
+  <h2 style="color: #1F3A5F;">Configuration</h2>
+  <ol>
+    <li>Create the branch analytic accounts (Accounting &rarr; Configuration &rarr; Analytic Accounts), optionally under a dedicated analytic plan.</li>
+    <li>Assign an analytic account on each Point of Sale configuration (Point of Sale &rarr; Configuration &rarr; Point of Sale &rarr; <em>Analytic Accounting</em> tab).</li>
+    <li>Optionally enable the enforcement toggles in Settings &rarr; Accounting &rarr; <em>Analytics</em>.</li>
+  </ol>
+
+  <h2 style="color: #1F3A5F;">Screenshots</h2>
+
+  <h3 style="color: #374151;">Point of Sale &mdash; Analytic Accounting</h3>
+  <p>Pick the branch analytic account on each POS configuration.</p>
+  <img src="1.png" alt="Point of Sale analytic account" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;">
+
+  <h3 style="color: #374151;">Customer invoice &mdash; Analytic Account header</h3>
+  <p>Select the branch on the invoice header; product lines and COGS inherit it automatically.</p>
+  <img src="2.png" alt="Customer invoice analytic account" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;">
+
+  <h3 style="color: #374151;">Sales order &mdash; Analytic Account header</h3>
+  <p>Select the branch on the sales order; it flows natively to the invoice and COGS.</p>
+  <img src="3.png" alt="Sales order analytic account" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;">
+
+  <h3 style="color: #374151;">Settings &mdash; Analytics enforcement</h3>
+  <p>Optionally require an analytic account before closing a POS session, posting a customer invoice, or confirming a sales order.</p>
+  <img src="4.png" alt="Analytics enforcement settings" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;">
+
+  <h2 style="color: #1F3A5F;">Technical notes</h2>
+  <ul>
+    <li>Odoo 19 Community, built with inheritance only — no core files are modified.</li>
+    <li>Uses the native <code>analytic_distribution</code> and native <code>stock_account</code> COGS flow — no duplicated COGS entries.</li>
+    <li>Multi-company safe (<code>check_company=True</code>).</li>
+    <li>Includes automated tests covering POS sale/refund, two branches, customer invoice, credit note, POS-generated invoice and sales orders.</li>
+  </ul>
+
+  <p style="color: #6b7280; margin-top: 2rem;">By <strong>Flous Flow</strong> — <a href="https://flousflow.com">flousflow.com</a></p>
+</body>
+</html>
