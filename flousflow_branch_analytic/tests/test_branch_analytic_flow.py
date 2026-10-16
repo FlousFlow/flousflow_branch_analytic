@@ -11,7 +11,7 @@ from odoo.exceptions import UserError
 P_AND_L_TYPES = ('income', 'income_other', 'expense', 'expense_direct_cost', 'expense_depreciation')
 
 
-@unittest.skip('Legacy Odoo 19 POS closing-flow fixture; Odoo 20 session moves use sale_move_ids/refund_move_ids.')
+@unittest.skip('Odoo 20 POS stock valuation is generated through the stock picking flow; legacy fixture does not create a COGS move.')
 @tagged('post_install', '-at_install')
 class TestBranchAnalyticFlow(TestPoSCommon):
     """Full end-to-end branch-analytic scenario: POS sale, POS refund, session
@@ -55,7 +55,7 @@ class TestBranchAnalyticFlow(TestPoSCommon):
             'property_cost_method': 'fifo',
             'property_valuation': 'real_time',
             'property_stock_valuation_account_id': (
-                cls.company_data['default_account_stock_valuation'].copy().id
+                cls.company_data['default_account_assets'].copy().id
             ),
             'property_account_expense_categ_id': cls.company_data['default_account_expense'].id,
             'property_account_income_categ_id': cls.company_data['default_account_revenue'].id,
@@ -75,6 +75,8 @@ class TestBranchAnalyticFlow(TestPoSCommon):
             'taxes_id': [],
             'list_price': 50.0,
         })
+        stock_location = cls.env.ref('stock.stock_location_stock')
+        cls.env['stock.quant']._update_available_quantity(cls.product, stock_location, 10.0)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -142,9 +144,19 @@ class TestBranchAnalyticFlow(TestPoSCommon):
     def _close_session(self, config):
         config.open_ui()
         session = config.current_session_id
-        session.action_pos_session_closing_control()
+        cash_method = session.payment_method_ids.filtered(lambda pm: pm.type == 'cash')[:1]
+        total_cash = sum(session.order_ids.payment_ids.filtered(
+            lambda payment: payment.payment_method_id == cash_method,
+        ).mapped('amount'))
+        session.close_session_from_ui({cash_method.id: total_cash})
         self.assertEqual(session.state, 'closed')
         return session
+
+    def _session_move(self, session):
+        """Return the accounting receipt created by an Odoo 20 session close."""
+        moves = session.sale_move_ids | session.refund_move_ids
+        self.assertTrue(moves, 'Closing the POS session must create an accounting move')
+        return moves[-1]
 
     @staticmethod
     def _lines_with_analytic(move, account):
@@ -170,7 +182,7 @@ class TestBranchAnalyticFlow(TestPoSCommon):
             'payment_data': [{'payment_method_id': self.cash_pm1.id, 'amount': 100.0}],
         })
         session = self._close_session(self.basic_config)
-        move = session.move_id
+        move = self._session_move(session)
 
         sale = self._lines_with_analytic(move, self.cairo).filtered(
             lambda l: l.account_id.account_type in ('income', 'income_other'))
@@ -185,7 +197,7 @@ class TestBranchAnalyticFlow(TestPoSCommon):
         no_analytic = move.line_ids.filtered(
             lambda l: l.account_id.account_type in (
                 'asset_receivable', 'asset_cash', 'liability_payable',
-            ) or l.display_type == 'tax' or l.account_id == self.company_data['default_account_stock_valuation'])
+            ) or l.display_type == 'tax' or l.account_id == self.company_data['default_account_assets'])
         for line in no_analytic:
             self.assertFalse(line.analytic_distribution)
 
@@ -211,7 +223,7 @@ class TestBranchAnalyticFlow(TestPoSCommon):
         self.assertEqual(refund.state, 'paid')
 
         session = self._close_session(self.basic_config)
-        self.assertAlmostEqual(self._pnl_total(session.move_id, self.cairo), 0.0)
+        self.assertAlmostEqual(self._pnl_total(self._session_move(session), self.cairo), 0.0)
 
     # ------------------------------------------------------------------
     # TEST 3 — Two branches, no cross contamination
@@ -243,10 +255,10 @@ class TestBranchAnalyticFlow(TestPoSCommon):
         })
         giza_session = self._close_session(giza_config)
 
-        self.assertAlmostEqual(self._pnl_total(cairo_session.move_id, self.cairo), 40.0)
-        self.assertAlmostEqual(self._pnl_total(cairo_session.move_id, self.giza), 0.0)
-        self.assertAlmostEqual(self._pnl_total(giza_session.move_id, self.giza), 40.0)
-        self.assertAlmostEqual(self._pnl_total(giza_session.move_id, self.cairo), 0.0)
+        self.assertAlmostEqual(self._pnl_total(self._session_move(cairo_session), self.cairo), 40.0)
+        self.assertAlmostEqual(self._pnl_total(self._session_move(cairo_session), self.giza), 0.0)
+        self.assertAlmostEqual(self._pnl_total(self._session_move(giza_session), self.giza), 40.0)
+        self.assertAlmostEqual(self._pnl_total(self._session_move(giza_session), self.cairo), 0.0)
 
     # ------------------------------------------------------------------
     # TEST 4 — Normal customer invoice + native COGS
