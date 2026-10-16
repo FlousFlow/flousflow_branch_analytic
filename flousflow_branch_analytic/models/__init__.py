@@ -5,3 +5,4 @@ from . import pos_session
 from . import pos_order
 from . import account_move
 from . import sale_order
+from . import stock_move
