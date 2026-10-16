@@ -1,8 +1,21 @@
-from odoo import models
+from odoo import api, fields, models
 
 
 class StockMove(models.Model):
     _inherit = 'stock.move'
+
+    branch_analytic_account_id = fields.Many2one(
+        'account.analytic.account',
+        copy=False,
+        check_company=True,
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        account_id = self.env.context.get('branch_analytic_account_id')
+        if account_id:
+            vals_list = [dict(vals, branch_analytic_account_id=account_id) for vals in vals_list]
+        return super().create(vals_list)
 
     def _get_account_move_line_vals(self):
         """Carry the POS branch analytic to Odoo 20 stock valuation lines.
@@ -14,6 +27,7 @@ class StockMove(models.Model):
         vals_list = super()._get_account_move_line_vals()
         order = self.picking_id.pos_order_id
         account = order.config_id.analytic_account_id if order else False
+        account = account or self.branch_analytic_account_id
         if not account:
             return vals_list
 
