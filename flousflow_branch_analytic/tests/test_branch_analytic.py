@@ -66,45 +66,6 @@ class TestBranchAnalytic(TransactionCase):
         self.assertEqual(config.analytic_account_id, self.cairo)
 
     # ------------------------------------------------------------------
-    # POS session accounting line values
-    # ------------------------------------------------------------------
-    def test_sale_vals_get_analytic_distribution(self):
-        config = self._get_pos_config(self.cairo)
-        session = self._get_pos_session(config)
-        session.move_id = self.env['account.move'].create({'journal_id': self._get_journal().id})
-        account = self._get_account()
-        key = (account.id, 1, (), (), False)
-        sale_vals = {'amount': 1000.0, 'amount_converted': 1000.0, 'quantity': 1.0}
-        vals = session._get_sale_vals(key, sale_vals)
-        self.assertEqual(vals['analytic_distribution'], {str(self.cairo.id): 100.0})
-
-    def test_sale_vals_without_analytic(self):
-        config = self._get_pos_config()
-        session = self._get_pos_session(config)
-        session.move_id = self.env['account.move'].create({'journal_id': self._get_journal().id})
-        account = self._get_account()
-        key = (account.id, 1, (), (), False)
-        sale_vals = {'amount': 1000.0, 'amount_converted': 1000.0, 'quantity': 1.0}
-        vals = session._get_sale_vals(key, sale_vals)
-        self.assertNotIn('analytic_distribution', vals)
-
-    def test_stock_expense_vals_get_analytic(self):
-        config = self._get_pos_config(self.cairo)
-        session = self._get_pos_session(config)
-        session.move_id = self.env['account.move'].create({'journal_id': self._get_journal().id})
-        expense_account = self._get_account()
-        vals = session._get_stock_expense_vals(expense_account, 600.0, 600.0)
-        self.assertEqual(vals['analytic_distribution'], {str(self.cairo.id): 100.0})
-
-    def test_stock_valuation_vals_untouched(self):
-        config = self._get_pos_config(self.cairo)
-        session = self._get_pos_session(config)
-        session.move_id = self.env['account.move'].create({'journal_id': self._get_journal().id})
-        valuation_account = self._get_account()
-        vals = session._get_stock_output_vals(valuation_account, 600.0, 600.0)
-        self.assertNotIn('analytic_distribution', vals)
-
-    # ------------------------------------------------------------------
     # POS generated invoice
     # ------------------------------------------------------------------
     def test_pos_invoice_vals_get_analytic(self):

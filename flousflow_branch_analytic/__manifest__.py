@@ -1,6 +1,6 @@
 {
     'name': 'Branch Analytic Accounting',
-    'version': '19.0.1.0.0',
+    'version': '20.0.1.0.0',
     'category': 'Sales/Point of Sale',
     'sequence': 10,
     'summary': 'Track branch / profit-center P&L by assigning an analytic account to POS, sales orders and customer invoices.',
@@ -51,7 +51,7 @@ Configuration
     'author': 'Flous Flow',
     'website': 'https://flousflow.com',
     'license': 'LGPL-3',
-    'depends': ['point_of_sale', 'stock_account', 'sale'],
+    'depends': ['point_of_sale', 'pos_stock', 'stock_account', 'sale'],
     'data': [
         'views/pos_config_views.xml',
         'views/account_move_views.xml',
